@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Captain Talks — Virtual IPL Captain AI</title>
+  <meta name="description" content="An agentic AI system that acts as a virtual IPL captain — making tactical decisions like Dhoni, Rohit, or Hardik would.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏏</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <div id="app">
+    <!-- ── Header ──────────────────────────────────────── -->
+    <header class="header">
+      <div class="logo">
+        <div class="logo-icon">🏏</div>
+        <div class="logo-text">Captain <span>Talks</span></div>
+      </div>
+      <!-- Settings: press Ctrl + , to open -->
+      <button class="settings-btn" id="settingsBtn" style="display:none"></button>
+    </header>
+
+    <!-- ── Mobile Tabs ─────────────────────────────────── -->
+    <div class="mobile-tabs" id="mobileTabs">
+      <button class="active" data-tab="input">📋 Input</button>
+      <button data-tab="decision">🧠 Decision</button>
+      <button data-tab="chat">💬 Chat</button>
+    </div>
+
+    <!-- ── Main Three-Panel Layout ─────────────────────── -->
+    <main class="main-panels">
+
+      <!-- Panel 1: Match State / Strategy Log -->
+      <section class="panel" id="panelInput" data-panel="input">
+        <div class="panel-header side-toggle-header">
+          <button class="side-toggle-btn active" data-side="matchState">
+            <span class="icon">📋</span> Match State
+          </button>
+          <button class="side-toggle-btn" data-side="strategyLog">
+            <span class="icon">📊</span> Strategy Log
+          </button>
+          <span class="badge" id="inningsBadge">1st Innings</span>
+        </div>
+
+        <!-- View 1: Match State -->
+        <div class="panel-body side-view active" id="viewMatchState">
+          <!-- Quick Presets -->
+          <div class="presets-row" id="presets">
+            <button class="preset-chip" data-preset="death-chase">💥 Death Over Chase</button>
+            <button class="preset-chip" data-preset="powerplay-collapse">⚡ PP Collapse</button>
+            <button class="preset-chip" data-preset="middle-stall">🐢 Middle Stall</button>
+            <button class="preset-chip" data-preset="last-over">🔥 Last Over</button>
+          </div>
+
+          <form id="matchForm">
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Batting Team</label>
+                <select class="form-select" id="teamBatting">
+                  <option value="">Select</option>
+                  <option>CSK</option><option>MI</option><option>RCB</option>
+                  <option>KKR</option><option>DC</option><option>PBKS</option>
+                  <option>RR</option><option>SRH</option><option>GT</option><option>LSG</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Bowling Team</label>
+                <select class="form-select" id="teamBowling">
+                  <option value="">Select</option>
+                  <option>CSK</option><option>MI</option><option>RCB</option>
+                  <option>KKR</option><option>DC</option><option>PBKS</option>
+                  <option>RR</option><option>SRH</option><option>GT</option><option>LSG</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="fetch-status" id="fetchStatus"></div>
+
+            <div class="form-row-3">
+              <div class="form-group">
+                <label class="form-label">Runs</label>
+                <input class="form-input" type="number" id="runs" placeholder="120" min="0">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Wickets</label>
+                <input class="form-input" type="number" id="wickets" placeholder="3" min="0" max="10">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Overs</label>
+                <input class="form-input" type="text" id="overs" placeholder="14.3">
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Innings</label>
+                <select class="form-select" id="innings">
+                  <option value="1">1st Innings</option>
+                  <option value="2">2nd Innings</option>
+                </select>
+              </div>
+              <div class="form-group" id="targetGroup" style="display:none">
+                <label class="form-label">Target</label>
+                <input class="form-input" type="number" id="target" placeholder="185" min="0">
+              </div>
+            </div>
+
+            <hr class="form-divider">
+
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Batsman 1 (Name)</label>
+                <input class="form-input" type="text" id="batsman1" placeholder="Jadeja">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Runs (B1)</label>
+                <input class="form-input" type="number" id="batsman1Runs" placeholder="34" min="0">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Batsman 2 (Name)</label>
+                <input class="form-input" type="text" id="batsman2" placeholder="Dhoni">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Runs (B2)</label>
+                <input class="form-input" type="number" id="batsman2Runs" placeholder="12" min="0">
+              </div>
+            </div>
+
+            <hr class="form-divider">
+
+            <div class="form-group">
+              <label class="form-label">Last Bowler</label>
+              <input class="form-input" type="text" id="lastBowler" placeholder="Bumrah">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Available Bowlers (comma-separated)</label>
+              <input class="form-input" type="text" id="availableBowlers" placeholder="Bumrah (1ov left), Archer (2ov), Pandya (3ov)">
+            </div>
+
+            <hr class="form-divider">
+
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Venue</label>
+                <select class="form-select" id="venue">
+                  <option value="">Select</option>
+                  <option>Wankhede Stadium</option><option>MA Chidambaram</option>
+                  <option>M Chinnaswamy</option><option>Eden Gardens</option>
+                  <option>Arun Jaitley Stadium</option><option>PCA Mohali</option>
+                  <option>SMS Stadium</option><option>Rajiv Gandhi Intl</option>
+                  <option>Narendra Modi Stadium</option><option>BRSABV Ekana</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Pitch</label>
+                <select class="form-select" id="pitchCondition">
+                  <option value="">Select</option>
+                  <option>Batting Friendly</option><option>Pace Friendly</option>
+                  <option>Spin Friendly</option><option>Balanced</option>
+                  <option>Two-Paced</option><option>Slow & Low</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">Dew Factor</label>
+                <select class="form-select" id="dew">
+                  <option>None</option><option>Light</option>
+                  <option>Heavy</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Recent Overs</label>
+                <input class="form-input" type="text" id="recentOvers" placeholder="8, 12, 6, 15">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Additional Context (optional)</label>
+              <textarea class="form-textarea" id="extras" placeholder="e.g., Bumrah just bowled a maiden, Jadeja looking shaky against short balls..."></textarea>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-full" id="getDecisionBtn">
+              🧠 Get Captain's Decision
+            </button>
+          </form>
+
+          <!-- Ball-by-Ball Timeline -->
+          <div class="bbb-section" id="bbbSection" style="display:none">
+            <div class="bbb-header">
+              <span class="bbb-title">⚾ Ball-by-Ball</span>
+              <span class="bbb-over-label" id="bbbOverLabel">Over —</span>
+              <button class="btn btn-sm btn-secondary" id="bbbSimulateBtn">▶ Simulate Next Over</button>
+            </div>
+            <div class="bbb-timeline" id="bbbTimeline"></div>
+          </div>
+        </div>
+
+        <!-- View 2: Strategy Log -->
+        <div class="panel-body side-view" id="viewStrategyLog">
+          <div class="slog-stats" id="slogStats">
+            <div class="slog-stat">
+              <div class="slog-stat-value" id="slogCallCount">0</div>
+              <div class="slog-stat-label">Calls</div>
+            </div>
+            <div class="slog-stat">
+              <div class="slog-stat-value" id="slogBalls">0</div>
+              <div class="slog-stat-label">Balls</div>
+            </div>
+            <div class="slog-stat">
+              <div class="slog-stat-value" id="slogPhase">—</div>
+              <div class="slog-stat-label">Phase</div>
+            </div>
+          </div>
+          <div id="slogEntries">
+            <div class="slog-empty" id="slogEmpty">
+              <div class="icon">📊</div>
+              <p>No strategy calls yet. Get a Captain's Decision to start building the log.</p>
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- Panel 2: AI Decision -->
+      <section class="panel" id="panelDecision" data-panel="decision">
+        <div class="panel-header">
+          <span class="icon">🧠</span> Captain's Decision
+          <span class="badge" id="personaBadge">🤖 AI Captain</span>
+        </div>
+        <div class="panel-body" id="decisionBody">
+          <div class="decision-empty" id="decisionEmpty">
+            <div class="icon">🏟️</div>
+            <p>Fill in the match state and hit <strong>"Get Captain's Decision"</strong> to see tactical analysis</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Panel 3: Chat -->
+      <section class="panel" id="panelChat" data-panel="chat">
+        <div class="panel-header">
+          <span class="icon">💬</span> Match Chat
+        </div>
+        <div class="chat-messages" id="chatMessages">
+          <div class="chat-empty" id="chatEmpty">
+            <div class="icon">💬</div>
+            <p>Ask the captain anything about the match — tactics, matchups, strategy</p>
+          </div>
+        </div>
+        <div class="chat-input-area">
+          <input type="text" class="chat-input" id="chatInput" placeholder="Ask the captain..." autocomplete="off">
+          <button class="chat-send" id="chatSendBtn" title="Send">➤</button>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- ── Settings Modal ──────────────────────────────────── -->
+  <div class="modal-overlay" id="settingsModal">
+    <div class="modal">
+      <h2 class="modal-title">⚙️ Settings</h2>
+      <p class="modal-subtitle">Configure your API keys to power Captain Talks</p>
+
+      <div class="modal-section">
+        <div class="modal-section-title">🤖 Google Gemini API</div>
+        <div class="form-group">
+          <label class="form-label">API Key</label>
+          <input class="form-input" type="password" id="geminiKeyInput" placeholder="AIza...">
+        </div>
+        <p style="font-size:.75rem;color:var(--text-3)">Get your key at <a href="https://aistudio.google.com/apikey" target="_blank">aistudio.google.com</a></p>
+      </div>
+
+      <div class="modal-section">
+        <div class="modal-section-title">🏏 CricketData.org API (Live Scores)</div>
+        <div class="form-group">
+          <label class="form-label">API Key</label>
+          <input class="form-input" type="password" id="cricketApiKeyInput" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
+        </div>
+        <p style="font-size:.75rem;color:var(--text-3)">Free key (100 req/day) at <a href="https://cricketdata.org" target="_blank">cricketdata.org</a> — enables live match data auto-fetch</p>
+      </div>
+
+      <div class="modal-section">
+        <div class="modal-section-title">🗄️ Supabase (Optional)</div>
+        <div class="form-group">
+          <label class="form-label">Project URL</label>
+          <input class="form-input" type="text" id="supabaseUrlInput" placeholder="https://abc.supabase.co">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Anon Key</label>
+          <input class="form-input" type="password" id="supabaseKeyInput" placeholder="eyJ...">
+        </div>
+        <p style="font-size:.75rem;color:var(--text-3)">Supabase is optional — enables saving match sessions & chat history</p>
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn btn-secondary" id="modalCancelBtn">Cancel</button>
+        <button class="btn btn-primary" id="modalSaveBtn">💾 Save Settings</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Toast ───────────────────────────────────────────── -->
+  <div class="toast" id="toast"></div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
